@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby's First Foods Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sun:#F9C22E; --sun-dark:#E8A800;
+    --blush:#F7856E; --mint:#5BBFA3; --sky:#7EC8E3;
+    --lavender:#B8A9E0; --berry:#E07A8C;
+    --cream:#FFFDF5; --paper:#FFF9EE;
+    --ink:#3D2C1E; --muted:#8C7A6B; --dot-empty:#E8DDD0;
+    --radius:16px;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Quicksand',sans-serif; background:var(--cream); color:var(--ink); }
+
+  header { background:var(--sun); padding:26px 20px 54px; position:relative; overflow:hidden; }
+  header::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:36px; background:var(--cream); border-radius:50% 50% 0 0/100% 100% 0 0; }
+  .hinner { max-width:960px; margin:0 auto; position:relative; z-index:1; }
+  .badge { display:inline-block; background:rgba(255,255,255,.35); font-family:'Nunito',sans-serif; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; padding:3px 11px; border-radius:20px; margin-bottom:8px; }
+  h1 { font-family:'Nunito',sans-serif; font-size:clamp(24px,5vw,40px); font-weight:900; color:var(--ink); line-height:1.1; }
+  h1 span { color:#fff; -webkit-text-stroke:1.5px var(--sun-dark); }
+  header p { margin-top:6px; font-size:12px; color:var(--ink); opacity:.7; }
+  .hdeco { position:absolute; right:10px; top:8px; font-size:56px; opacity:.15; pointer-events:none; }
+
+  /* SYNC BADGE */
+  .sync-bar { max-width:960px; margin:0 auto; padding:8px 14px 0; display:flex; justify-content:flex-end; }
+  .sync-badge { display:inline-flex; align-items:center; gap:5px; font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; }
+  .sync-badge.connecting { background:#FFF3CD; color:#856404; }
+  .sync-badge.connected  { background:#D1FAE5; color:#065F46; }
+  .sync-badge.error      { background:#FEE2E2; color:#991B1B; }
+  .sync-dot { width:7px; height:7px; border-radius:50%; }
+  .sync-badge.connecting .sync-dot { background:#FFC107; animation:pulse 1s infinite; }
+  .sync-badge.connected  .sync-dot { background:#10B981; }
+  .sync-badge.error      .sync-dot { background:#EF4444; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .namebar { max-width:960px; margin:8px auto 0; padding:0 14px; position:relative; z-index:2; }
+  .namewrap { background:#fff; border-radius:13px; padding:11px 18px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 18px rgba(0,0,0,.08); border:2px solid transparent; }
+  .namewrap:focus-within { border-color:var(--sun); }
+  .namelbl { font-family:'Nunito',sans-serif; font-weight:800; font-size:12px; color:var(--muted); white-space:nowrap; }
+  .nameinp { border:none; outline:none; font-family:'Nunito',sans-serif; font-size:16px; font-weight:800; color:var(--ink); flex:1; background:transparent; }
+  .nameinp::placeholder { color:var(--dot-empty); }
+
+  main { max-width:960px; margin:16px auto; padding:0 14px; display:grid; gap:14px; }
+
+  .card { background:#fff; border-radius:var(--radius); overflow:hidden; box-shadow:0 2px 14px rgba(0,0,0,.06); }
+  .cardhead { padding:14px 18px; display:flex; align-items:center; gap:9px; }
+  .cardhead .icon { font-size:20px; }
+  .cardhead .title { font-family:'Nunito',sans-serif; font-size:13px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; }
+  .cardhead .cnt { margin-left:auto; background:rgba(255,255,255,.3); color:#fff; font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
+  .h-veg{background:var(--mint)} .h-fruit{background:var(--blush)} .h-protein{background:var(--berry)}
+  .h-grain{background:var(--lavender)} .h-dairy{background:var(--sky)} .h-allergen{background:var(--berry)} .h-notes{background:#C5B8E8}
+
+  .foodgrid { padding:14px; display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; }
+  .fi { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:11px; background:var(--paper); transition:background .2s; gap:6px; }
+  .fi.tried { background:#F0FDF8; }
+  .fi.tried .fn { font-weight:700; }
+  .fi-left { display:flex; align-items:center; gap:6px; flex:1; min-width:0; }
+  .fn { font-size:14px; font-weight:600; color:var(--ink); }
+
+  .dots { display:flex; gap:4px; flex-shrink:0; }
+  .dot { width:15px; height:15px; border-radius:50%; background:var(--dot-empty); cursor:pointer; transition:background .15s,transform .1s; position:relative; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .dot:hover { transform:scale(1.25); }
+  .dot.on { background:var(--dc,var(--mint)); }
+  .dot.on::after { content:''; position:absolute; inset:3px; border-radius:50%; background:rgba(255,255,255,.35); }
+
+  .thumbs { display:flex; gap:2px; flex-shrink:0; }
+  .thumb { font-size:18px; line-height:1; cursor:pointer; opacity:0.2; transition:opacity .15s, transform .1s; user-select:none; padding:2px; }
+  .thumb:hover { transform:scale(1.2); }
+  .thumb.on { opacity:1; }
+
+  .addbtn-wrap { padding:4px 12px 11px; }
+  .addbtn { font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; color:var(--muted); background:none; border:2px dashed var(--dot-empty); padding:9px 12px; border-radius:8px; cursor:pointer; width:100%; }
+  .addbtn:hover { border-color:var(--sun); color:var(--ink); }
+
+  .a-info-box { margin:0 14px 10px; background:#FFF0EC; border-left:3px solid var(--berry); border-radius:8px; padding:8px 12px; font-size:11px; color:var(--muted); line-height:1.6; }
+  .a-col-heads { display:grid; grid-template-columns:1fr 90px 1fr; gap:8px; padding:4px 14px 6px; border-bottom:2px solid var(--dot-empty); }
+  .a-col-head { font-family:'Nunito',sans-serif; font-size:9px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  .a-col-head.center { text-align:center; }
+  .a-list { padding:6px 14px 14px; display:flex; flex-direction:column; gap:5px; }
+  .a-row { display:grid; grid-template-columns:1fr 100px 1fr; gap:8px; align-items:center; padding:10px 12px; border-radius:9px; background:var(--paper); }
+  .a-row.sub { background:#FFFAF8; padding-left:22px; }
+  .a-row.group { background:#FFF0EC; grid-template-columns:1fr; padding:6px 10px; }
+  .a-name { font-family:'Nunito',sans-serif; font-size:13px; font-weight:800; color:var(--ink); }
+  .a-row.sub .a-name { font-size:11.5px; font-weight:700; color:var(--muted); }
+  .a-row.group .a-name { font-size:12px; color:var(--berry); }
+  .a-ex { font-size:11px; color:var(--muted); line-height:1.4; margin-top:1px; }
+  .a-dots-wrap { display:flex; justify-content:center; }
+  .a-note { border:none; border-bottom:1.5px solid var(--dot-empty); padding:5px 2px; font-family:'Quicksand',sans-serif; font-size:13px; color:var(--ink); background:transparent; outline:none; width:100%; }
+  .a-note:focus { border-color:var(--berry); }
+  .a-note::placeholder { color:var(--dot-empty); font-size:11px; }
+
+  .notesgrid { padding:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media(max-width:480px){ .notesgrid{grid-template-columns:1fr} }
+  .nf { display:flex; flex-direction:column; gap:3px; }
+  .nl { font-size:9px; font-weight:700; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; }
+  .ni { border:none; border-bottom:2px solid var(--dot-empty); padding:7px 2px; font-family:'Quicksand',sans-serif; font-size:14px; color:var(--ink); background:transparent; outline:none; width:100%; }
+  .ni:focus { border-color:var(--sun); }
+
+  .printbtn { display:block; margin:0 auto 16px; padding:10px 24px; background:var(--sun); color:var(--ink); font-family:'Nunito',sans-serif; font-weight:800; font-size:13px; border:none; border-radius:30px; cursor:pointer; box-shadow:0 4px 12px rgba(249,194,46,.4); }
+  .printbtn:hover { transform:translateY(-1px); }
+  footer { text-align:center; padding:8px 14px 32px; font-size:10.5px; color:var(--muted); line-height:1.7; }
+  footer strong { color:var(--ink); }
+
+  @media print {
+    @page { margin:8mm 7mm; size:A4; }
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body { background:#fff !important; }
+    header { padding:12px 14px 36px !important; }
+    header::after { background:#fff !important; }
+    .hdeco,.addbtn-wrap,.printbtn,.sync-bar { display:none !important; }
+    main { margin:10px auto !important; gap:9px !important; padding:0 6px !important; }
+    .card { box-shadow:none !important; border:1px solid #e0d8d0 !important; break-inside:avoid; }
+    .foodgrid { padding:7px !important; gap:4px !important; grid-template-columns:repeat(auto-fill,minmax(145px,1fr)) !important; }
+    .fi { padding:4px 8px !important; }
+    .fn { font-size:10.5px !important; }
+    .dot { width:9px !important; height:9px !important; }
+    .h-veg{background:var(--mint)!important} .h-fruit{background:var(--blush)!important}
+    .h-protein{background:var(--berry)!important} .h-grain{background:var(--lavender)!important}
+    .h-dairy{background:var(--sky)!important} .h-allergen{background:var(--berry)!important}
+    .h-notes{background:#C5B8E8!important}
+    .cardhead .title,.cardhead .cnt { color:#fff !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdeco">🍼🥦🍓🥑🌾</div>
+  <div class="hinner">
+    <div class="badge">Starting Solids</div>
+    <h1>Baby's <span>First Foods</span> Tracker</h1>
+    <p>Tap a dot each time your baby tries a food — 6 dots = 6 exposures!</p>
+  </div>
+</header>
+
+<div class="sync-bar">
+  <div class="sync-badge connecting" id="syncBadge">
+    <div class="sync-dot"></div>
+    <span id="syncText">Not yet synced</span>
+  </div>
+</div>
+
+<div class="namebar">
+  <div class="namewrap">
+    <span class="namelbl">Baby's name:</span>
+    <input class="nameinp" id="babyName" type="text" placeholder="Enter name here…">
+  </div>
+</div>
+
+<main>
+  <div class="card"><div class="cardhead h-veg"><span class="icon">🥦</span><span class="title">Vegetables</span><span class="cnt" id="cnt-veg">0 tried</span></div><div class="foodgrid" id="g-veg"></div><div class="addbtn-wrap"><button class="addbtn" onclick="addFood('veg')">＋ Add your own</button></div></div>
+  <div class="card"><div class="cardhead h-fruit"><span class="icon">🍓</span><span class="title">Fruit</span><span class="cnt" id="cnt-fruit">0 tried</span></div><div class="foodgrid" id="g-fruit"></div><div class="addbtn-wrap"><button class="addbtn" onclick="addFood('fruit')">＋ Add your own</button></div></div>
+  <div class="card"><div class="cardhead h-protein"><span class="icon">🥩</span><span class="title">Iron-Rich Foods &amp; Protein</span><span class="cnt" id="cnt-protein">0 tried</span></div><div class="foodgrid" id="g-protein"></div><div class="addbtn-wrap"><button class="addbtn" onclick="addFood('protein')">＋ Add your own</button></div></div>
+  <div class="card"><div class="cardhead h-grain"><span class="icon">🌾</span><span class="title">Grains &amp; Cereals</span><span class="cnt" id="cnt-grain">0 tried</span></div><div class="foodgrid" id="g-grain"></div><div class="addbtn-wrap"><button class="addbtn" onclick="addFood('grain')">＋ Add your own</button></div></div>
+  <div class="card"><div class="cardhead h-dairy"><span class="icon">🧀</span><span class="title">Dairy</span><span class="cnt" id="cnt-dairy">0 tried</span></div><div class="foodgrid" id="g-dairy"></div><div class="addbtn-wrap"><button class="addbtn" onclick="addFood('dairy')">＋ Add your own</button></div></div>
+
+  <div class="card">
+    <div class="cardhead h-allergen"><span class="icon">⚠️</span><span class="title">Common Allergens</span></div>
+    <div class="a-info-box">Introduce allergens one at a time, 3–5 days apart. Keep offering regularly once introduced. Fill a dot for each exposure and note any reactions.</div>
+    <div class="a-col-heads">
+      <div class="a-col-head">Allergen &amp; examples</div>
+      <div class="a-col-head center">Exposures</div>
+      <div class="a-col-head">Reactions / Notes</div>
+    </div>
+    <div class="a-list" id="a-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead h-notes"><span class="icon">📝</span><span class="title">General Notes</span></div>
+    <div class="notesgrid" id="notesgrid"></div>
+  </div>
+</main>
+
+<div style="text-align:center;padding:0 14px 4px;">
+  <button class="printbtn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+</div>
+<footer>
+  <strong>Important:</strong> Guide only — not a substitute for professional medical advice.<br>
+  Wait until 12 months to offer honey. Always supervise mealtimes.
+</footer>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Firebase config ──────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDMSjV90ocFeqic8jDm-j0wzRY6TZnkNYw",
+  authDomain: "baby-food-tracker-23286.firebaseapp.com",
+  projectId: "baby-food-tracker-23286",
+  storageBucket: "baby-food-tracker-23286.firebasestorage.app",
+  messagingSenderId: "1045667323335",
+  appId: "1:1045667323335:web:1e7d197521fcb6b8124de2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const DOC = doc(db, "tracker", "shared");
+
+// ── Data ─────────────────────────────────────────────────────────
+const FOODS = {
+  veg:     { color:'#5BBFA3', items:['Asparagus','Beans','Beetroot','Broccoli','Cabbage','Capsicum','Carrot','Cauliflower','Celery','Corn','Cucumber','Eggplant','Garlic','Ginger','Lettuce','Mint','Mushrooms','Onion','Parsnip','Peas','Potato','Pumpkin','Rosemary','Shallot','Spinach','Sweet potato','Tomato','Zucchini'] },
+  fruit:   { color:'#F7856E', items:['Apple','Apricot','Avocado','Banana','Blackberries','Blueberry','Fig','Grapes','Kiwi fruit','Lemon','Mango','Nectarine','Orange','Pear','Peach','Pineapple','Prunes','Raspberry','Rockmelon','Strawberry','Watermelon'] },
+  protein: { color:'#E07A8C', items:['Beef','Black beans','Butterbeans','Cannellini beans','Cashews','Chia seeds','Chicken','Chickpeas','Crab','Eggs','Hemp seeds','Kidney beans','Lamb','Lentils','Peanuts','Pistachio','Pork','Prawns','Pumpkin seeds','Salmon','Sardines','Sesame / tahini','Shellfish','Sunflower seeds','Tofu','Tuna','Turkey','White fish'] },
+  grain:   { color:'#B8A9E0', items:['Barley','Bread','Couscous','Noodles','Oats','Pasta','Quinoa','Rice','Weet-Bix'] },
+  dairy:   { color:'#7EC8E3', items:['Plain yoghurt','Cottage cheese','Goats cheese','Mozzarella','Ricotta'] }
+};
+
+const ALLERGENS = [
+  { name:"Cow's Milk", ex:"Yoghurt, soft cheese, ricotta, cow's milk on cereal" },
+  { name:"Eggs",       ex:"Well-cooked egg, omelette, frittata" },
+  { name:"Fish",       ex:"Salmon, tuna — avoid high-mercury fish e.g. shark" },
+  { name:"Shellfish",  ex:"Prawns, crab, oysters" },
+  { name:"Peanuts",    ex:"Smooth peanut butter, finely ground peanuts" },
+  { name:"Sesame",     ex:"Tahini, ground sesame seeds" },
+  { name:"Soy",        ex:"Silken tofu, calcium-fortified soy milk" },
+  { name:"Wheat",      ex:"Pasta, flour in baking, semolina, soft weet-bix" },
+  { name:"Tree Nuts", group:true },
+  { name:"Almond",     ex:"Smooth almond butter, finely ground almonds",       sub:true },
+  { name:"Brazil nut", ex:"Finely ground brazil nuts",                          sub:true },
+  { name:"Cashew",     ex:"Smooth cashew butter, finely ground cashews",        sub:true },
+  { name:"Hazelnut",   ex:"Smooth hazelnut butter, finely ground hazelnuts",    sub:true },
+  { name:"Macadamia",  ex:"Finely ground macadamia",                            sub:true },
+  { name:"Pecan",      ex:"Finely ground pecans",                               sub:true },
+  { name:"Pine nuts",  ex:"Finely ground pine nuts",                            sub:true },
+  { name:"Pistachio",  ex:"Finely ground pistachios",                           sub:true },
+  { name:"Walnut",     ex:"Finely ground walnuts",                              sub:true },
+];
+
+// ── State ─────────────────────────────────────────────────────────
+// remoteState = last snapshot from Firestore (source of truth)
+// localState  = working copy we render from
+let remoteState = {};
+let localState  = {};
+let saveTimer   = null;
+let initialised = false;
+
+function setSyncStatus(status, text) {
+  const badge = document.getElementById('syncBadge');
+  const label = document.getElementById('syncText');
+  badge.className = 'sync-badge ' + status;
+  label.textContent = text;
+}
+
+// Debounced save — waits 800ms after last change before writing to Firestore
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await setDoc(DOC, localState);
+    } catch(e) {
+      setSyncStatus('error', 'Sync error');
+      console.error(e);
+    }
+  }, 800);
+}
+
+function setState(key, value) {
+  localState[key] = value;
+  scheduleSave();
+}
+
+// ── Render UI immediately so foods always show ───────────────────
+initUI();
+
+// ── Real-time listener ────────────────────────────────────────────
+onSnapshot(DOC, (snap) => {
+  setSyncStatus('connected', 'Synced ✓');
+  if (snap.exists()) {
+    remoteState = snap.data();
+    localState = { ...remoteState };
+  } else {
+    remoteState = {};
+    localState  = {};
+  }
+  refreshAllDots();
+  refreshAllNotes();
+  refreshName();
+}, (err) => {
+  setSyncStatus('error', 'Set up Firebase to sync');
+  console.error(err);
+});
+
+// ── Dots ──────────────────────────────────────────────────────────
+function makeDots(k, color, n) {
+  const w = document.createElement('div');
+  w.className = 'dots';
+  w.id = 'dots__' + k.replace(/[^a-zA-Z0-9]/g,'_');
+  renderDots(w, k, color, n);
+  return w;
+}
+
+function renderDots(w, k, color, n) {
+  w.innerHTML = '';
+  const val = localState[k] || 0;
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (val > i ? ' on' : '');
+    if (val > i) d.style.setProperty('--dc', color);
+    d.onclick = () => {
+      const cur = localState[k] || 0;
+      setState(k, cur === i+1 ? i : i+1);
+      const wrap = document.getElementById('dots__' + k.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (wrap) renderDots(wrap, k, color, n);
+      const fi = document.getElementById('fi__' + k.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (fi) fi.classList.toggle('tried', (localState[k]||0) > 0);
+      updateCnt(k.split('__')[0]);
+    };
+    w.appendChild(d);
+  }
+}
+
+function refreshAllDots() {
+  // Food dots
+  Object.keys(FOODS).forEach(sec => {
+    const { color, items } = FOODS[sec];
+    items.forEach(food => {
+      const k = sec+'__'+food;
+      const id = 'dots__' + k.replace(/[^a-zA-Z0-9]/g,'_');
+      const w = document.getElementById(id);
+      if (w) renderDots(w, k, color, 6);
+      const fi = document.getElementById('fi__' + k.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (fi) fi.classList.toggle('tried', (localState[k]||0) > 0);
+      // Refresh thumbs
+      const tk = 'thumb__'+k;
+      const tw = document.getElementById('thumbs__' + k.replace(/[^a-zA-Z0-9]/g,'_'));
+      if (tw) renderThumbs(tw, tk);
+    });
+    updateCnt(sec);
+  });
+  // Allergen dots
+  ALLERGENS.filter(a => !a.group).forEach(a => {
+    const k = 'al__'+a.name;
+    const id = 'dots__' + k.replace(/[^a-zA-Z0-9]/g,'_');
+    const w = document.getElementById(id);
+    if (w) renderDots(w, k, '#E07A8C', 6);
+  });
+}
+
+function refreshAllNotes() {
+  ALLERGENS.filter(a => !a.group).forEach(a => {
+    const nk = 'aln__'+a.name;
+    const el = document.getElementById('anote__'+a.name.replace(/[^a-zA-Z0-9]/g,'_'));
+    if (el && document.activeElement !== el) el.value = localState[nk] || '';
+  });
+  ['Reactions noticed','Foods refused','Favourite so far','Foods to retry','Texture notes','Mealtime wins','Questions for doctor','Other notes'].forEach((_,i) => {
+    const el = document.getElementById('gn__'+i);
+    if (el && document.activeElement !== el) el.value = localState['gn'+i] || '';
+  });
+}
+
+function refreshName() {
+  const el = document.getElementById('babyName');
+  if (el && document.activeElement !== el) el.value = localState.bname || '';
+}
+
+// ── Food sections ─────────────────────────────────────────────────
+function makeThumbs(k) {
+  const tk = 'thumb__'+k;
+  const wrap = document.createElement('div');
+  wrap.className = 'thumbs';
+  wrap.id = 'thumbs__' + k.replace(/[^a-zA-Z0-9]/g,'_');
+  renderThumbs(wrap, tk);
+  return wrap;
+}
+
+function renderThumbs(wrap, tk) {
+  wrap.innerHTML = '';
+  const val = localState[tk] || null; // 'up', 'down', or null
+  ['👍','👎'].forEach(emoji => {
+    const btn = document.createElement('span');
+    btn.className = 'thumb' + ((emoji==='👍'&&val==='up')||(emoji==='👎'&&val==='down') ? ' on' : '');
+    btn.textContent = emoji;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const cur = localState[tk] || null;
+      const next = (emoji==='👍' && cur==='up') || (emoji==='👎' && cur==='down') ? null : (emoji==='👍' ? 'up' : 'down');
+      setState(tk, next);
+      const w = document.getElementById('thumbs__' + tk.replace('thumb__','').replace(/[^a-zA-Z0-9]/g,'_'));
+      if (w) renderThumbs(w, tk);
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function buildFoodItem(sec, food) {
+  const k = sec+'__'+food;
+  const { color } = FOODS[sec];
+  const fi = document.createElement('div');
+  fi.className = 'fi' + ((localState[k]||0) > 0 ? ' tried' : '');
+  fi.id = 'fi__' + k.replace(/[^a-zA-Z0-9]/g,'_');
+  // Left side: thumbs + food name
+  const left = document.createElement('div');
+  left.className = 'fi-left';
+  left.appendChild(makeThumbs(k));
+  const nm = document.createElement('span');
+  nm.className = 'fn';
+  nm.textContent = food;
+  left.appendChild(nm);
+  fi.appendChild(left);
+  // Right side: dots
+  fi.appendChild(makeDots(k, color, 6));
+  return fi;
+}
+
+function renderSec(sec) {
+  const g = document.getElementById('g-'+sec);
+  g.innerHTML = '';
+  FOODS[sec].items.sort((a,b) => a.localeCompare(b));
+  FOODS[sec].items.forEach(f => g.appendChild(buildFoodItem(sec, f)));
+  updateCnt(sec);
+}
+
+function updateCnt(sec) {
+  const el = document.getElementById('cnt-'+sec);
+  if (!el) return;
+  const n = Object.keys(localState).filter(k => k.startsWith(sec+'__') && (localState[k]||0) > 0).length;
+  el.textContent = n + ' tried';
+}
+
+window.addFood = function(sec) {
+  const name = prompt('Enter food name:');
+  if (!name || !name.trim()) return;
+  const food = name.trim();
+  if (FOODS[sec].items.includes(food)) return;
+  FOODS[sec].items.push(food);
+  // Persist custom food list
+  const ck = 'custom__'+sec;
+  const existing = localState[ck] ? JSON.parse(localState[ck]) : [];
+  existing.push(food);
+  setState(ck, JSON.stringify(existing));
+  renderSec(sec);
+};
+
+// Restore custom foods added by user
+function restoreCustomFoods() {
+  Object.keys(FOODS).forEach(sec => {
+    const ck = 'custom__'+sec;
+    if (localState[ck]) {
+      const extras = JSON.parse(localState[ck]);
+      extras.forEach(f => { if (!FOODS[sec].items.includes(f)) FOODS[sec].items.push(f); });
+    }
+  });
+}
+
+// ── Allergens ─────────────────────────────────────────────────────
+function renderAllergens() {
+  const list = document.getElementById('a-list');
+  list.innerHTML = '';
+  ALLERGENS.forEach(a => {
+    const row = document.createElement('div');
+    if (a.group) {
+      row.className = 'a-row group';
+      row.innerHTML = '<span class="a-name">🌳 '+a.name+' — introduce each nut separately</span>';
+    } else {
+      row.className = 'a-row' + (a.sub ? ' sub' : '');
+      const k  = 'al__'+a.name;
+      const nk = 'aln__'+a.name;
+      const col1 = document.createElement('div');
+      col1.innerHTML = '<div class="a-name">'+a.name+'</div><div class="a-ex">'+a.ex+'</div>';
+      const col2 = document.createElement('div');
+      col2.className = 'a-dots-wrap';
+      col2.appendChild(makeDots(k, '#E07A8C', 6));
+      const col3 = document.createElement('div');
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'a-note'; inp.placeholder = 'Notes…';
+      inp.id = 'anote__'+a.name.replace(/[^a-zA-Z0-9]/g,'_');
+      inp.value = localState[nk] || '';
+      inp.oninput = () => setState(nk, inp.value);
+      col3.appendChild(inp);
+      row.appendChild(col1); row.appendChild(col2); row.appendChild(col3);
+    }
+    list.appendChild(row);
+  });
+}
+
+// ── General notes ─────────────────────────────────────────────────
+function renderNotes() {
+  const g = document.getElementById('notesgrid');
+  ['Reactions noticed','Foods refused','Favourite so far','Foods to retry','Texture notes','Mealtime wins','Questions for doctor','Other notes'].forEach((lbl, i) => {
+    const wrap = document.createElement('div'); wrap.className = 'nf';
+    const l = document.createElement('label'); l.className = 'nl'; l.textContent = lbl;
+    const inp = document.createElement('input'); inp.className = 'ni'; inp.type = 'text'; inp.placeholder = '…';
+    inp.id = 'gn__'+i;
+    inp.value = localState['gn'+i] || '';
+    inp.oninput = () => setState('gn'+i, inp.value);
+    wrap.appendChild(l); wrap.appendChild(inp); g.appendChild(wrap);
+  });
+}
+
+// ── Baby name ─────────────────────────────────────────────────────
+function initName() {
+  const el = document.getElementById('babyName');
+  el.value = localState.bname || '';
+  el.oninput = () => setState('bname', el.value);
+}
+
+// ── Init UI (called once after first Firestore snapshot) ──────────
+function initUI() {
+  restoreCustomFoods();
+  Object.keys(FOODS).forEach(renderSec);
+  renderAllergens();
+  renderNotes();
+  initName();
+}
+
+</script>
+</body>
+</html>
